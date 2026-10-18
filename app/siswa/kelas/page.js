@@ -10,9 +10,15 @@ export default function SiswaKelasPage() {
   const { currentUser, kelas, users, programs } = useData();
 
   // Filter classes followed by this student (or all if super_admin)
-  const enrolledClasses = currentUser.role === "super_admin"
+  const enrolledClasses = currentUser?.role === "super_admin"
     ? kelas
-    : kelas.filter((k) => k.siswaIds?.includes(currentUser.id) || (currentUser.aliasId && k.siswaIds?.includes(currentUser.aliasId)));
+    : currentUser
+    ? kelas.filter(
+        (k) =>
+          k.siswaIds?.includes(currentUser.id) ||
+          (currentUser.aliasId && k.siswaIds?.includes(currentUser.aliasId))
+      )
+    : [];
 
   return (
     <PortalLayout title="Kelas Saya">

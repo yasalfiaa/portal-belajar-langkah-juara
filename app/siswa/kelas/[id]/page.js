@@ -26,13 +26,30 @@ function SiswaKelasDetailContent({ params }) {
 
   const currentClass = kelas.find((k) => k.id === classId);
 
-  if (!currentClass) {
+  const isEnrolled = currentUser
+    ? Boolean(
+        currentClass?.siswaIds?.includes(currentUser.id) ||
+          (currentUser.aliasId && currentClass?.siswaIds?.includes(currentUser.aliasId))
+      )
+    : false;
+
+  const canAccessClass =
+    currentUser?.role === "super_admin" ||
+    currentUser?.role === "staf" ||
+    (currentUser?.role === "tutor" &&
+      (currentClass?.tutorId === currentUser.id ||
+        currentClass?.tutorId === currentUser.aliasId)) ||
+    (currentUser?.role === "siswa" && isEnrolled);
+
+  if (!currentClass || !canAccessClass) {
     return (
       <div className="bg-white rounded-2xl border border-gray-200/80 p-10 text-center max-w-md mx-auto my-12">
         <AlertTriangle className="w-12 h-12 text-amber-500 mx-auto mb-3" />
         <h3 className="text-lg font-bold text-[#1F2937]">Kelas tidak ditemukan</h3>
         <p className="text-sm text-[#5A6B78] mt-1 mb-6">
-          ID kelas yang Anda tuju tidak terdaftar di sistem Langkah Juara.
+          {currentClass && !isEnrolled
+            ? "Anda tidak terdaftar pada kelas ini. Sesuai ketentuan PRD 4.4 & Bab 8, rincian kelas hanya dapat diakses oleh siswa terdaftar."
+            : "ID kelas yang Anda tuju tidak terdaftar di sistem Langkah Juara."}
         </p>
         <Link
           href="/siswa/kelas"
@@ -55,9 +72,14 @@ function SiswaKelasDetailContent({ params }) {
   const classTugas = tugas
     .filter((t) => t.kelasId === classId)
     .map((t) => {
-      const studentSub = pengumpulan.find(
-        (p) => p.tugasId === t.id && p.siswaId === currentUser.id
-      );
+      const studentSub = currentUser
+        ? pengumpulan.find(
+            (p) =>
+              p.tugasId === t.id &&
+              (p.siswaId === currentUser.id ||
+                (currentUser.aliasId && p.siswaId === currentUser.aliasId))
+          )
+        : null;
       const status = getTugasStatus(t, studentSub);
       return { ...t, status, studentSub };
     });
