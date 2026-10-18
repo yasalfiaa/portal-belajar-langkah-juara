@@ -18,7 +18,7 @@ export default function DasborTutorRoutePage() {
 
   // If user is tutor, filter by current tutor, or default to all tutor-assigned classes
   const tutorClasses = currentUser.role === "tutor"
-    ? kelas.filter((k) => k.tutorId === currentUser.id)
+    ? kelas.filter((k) => k.tutorId === currentUser.id || k.tutorId === currentUser.aliasId)
     : kelas;
 
   const todaysTutorClasses = tutorClasses;

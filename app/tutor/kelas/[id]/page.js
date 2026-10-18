@@ -75,7 +75,7 @@ function KelasYangDiajarTutorContent({ params }) {
   }
 
   // Business Decision 2: "Bolehkah Kak Dimas membuka kelas Kak Nadia? Tidak, Kak Dimas memiliki id kelas yang berbeda sehingga akses ditolak (4.12)"
-  const isClassTutor = currentClass.tutorId === currentUser.id;
+  const isClassTutor = currentClass.tutorId === currentUser.id || currentClass.tutorId === currentUser.aliasId;
   const canAccessClass = currentUser.role === "super_admin" || isClassTutor;
 
   if (!canAccessClass) {

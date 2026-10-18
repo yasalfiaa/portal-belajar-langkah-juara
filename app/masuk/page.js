@@ -1,43 +1,81 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useData } from "@/context/DataContext";
-import { Sparkles, ArrowRight, UserCheck } from "lucide-react";
+import { useData, getFirebaseErrorMessage } from "@/context/DataContext";
+import { Sparkles, ArrowRight, UserCheck, Loader2 } from "lucide-react";
 
 export default function MasukPage() {
   const router = useRouter();
-  const { users, switchRole, setCurrentUserId } = useData();
+  const {
+    users,
+    currentUser,
+    switchRole,
+    setCurrentUserId,
+    loginWithEmail,
+    loginWithGoogle,
+    logoutUser,
+    authUser,
+    authLoading,
+    activeRole,
+  } = useData();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handleLogin = (e) => {
+  // Redirect helper based on user role as per Peta Route
+  const routeByRole = (role) => {
+    if (role === "siswa") router.push("/siswa/beranda");
+    else if (role === "staf") router.push("/staf/dasbor");
+    else if (role === "tutor") router.push("/tutor/dasbor");
+    else if (role === "super_admin") router.push("/admin/dasbor");
+    else router.push("/siswa/beranda");
+  };
+
+  const handleLogin = async (e) => {
     e.preventDefault();
     setError("");
+    setLoading(true);
 
-    const user = users.find((u) => u.email.toLowerCase() === email.toLowerCase());
-    if (!user) {
-      setError("Email tidak ditemukan dalam sistem.");
-      return;
+    try {
+      const profile = await loginWithEmail(email.trim(), password);
+      routeByRole(profile.role);
+    } catch (err) {
+      console.warn("Firebase Auth error:", err);
+      // Fallback: check if matches local seed user without Firebase Auth account yet
+      const seedUser = users.find((u) => u.email.toLowerCase() === email.trim().toLowerCase());
+      if (seedUser) {
+        if (!seedUser.aktif) {
+          setError("Akun Anda dinonaktifkan. Hubungi staf Langkah Juara.");
+          setLoading(false);
+          return;
+        }
+        switchRole(seedUser.role);
+        setCurrentUserId(seedUser.id);
+        routeByRole(seedUser.role);
+        return;
+      }
+      setError(getFirebaseErrorMessage(err));
+    } finally {
+      setLoading(false);
     }
+  };
 
-    if (!user.aktif) {
-      setError("Akun Anda dinonaktifkan. Hubungi staf Langkah Juara.");
-      return;
+  const handleGoogleLogin = async () => {
+    setError("");
+    setLoading(true);
+    try {
+      const profile = await loginWithGoogle();
+      routeByRole(profile.role);
+    } catch (err) {
+      console.warn("Google Auth error:", err);
+      setError(getFirebaseErrorMessage(err));
+    } finally {
+      setLoading(false);
     }
-
-    switchRole(user.role);
-    setCurrentUserId(user.id);
-
-    // Direct to role specific page as per Peta Route
-    if (user.role === "siswa") router.push("/siswa/beranda");
-    else if (user.role === "staf") router.push("/staf/dasbor");
-    else if (user.role === "tutor") router.push("/tutor/dasbor");
-    else if (user.role === "super_admin") router.push("/admin/dasbor");
-    else router.push("/siswa/beranda");
   };
 
   const handleQuickLogin = (role, userEmail) => {
@@ -45,16 +83,8 @@ export default function MasukPage() {
     if (user) {
       switchRole(user.role);
       setCurrentUserId(user.id);
-      if (user.role === "siswa") router.push("/siswa/beranda");
-      else if (user.role === "staf") router.push("/staf/dasbor");
-      else if (user.role === "tutor") router.push("/tutor/dasbor");
-      else if (user.role === "super_admin") router.push("/admin/dasbor");
+      routeByRole(user.role);
     }
-  };
-
-  const handleGoogleLogin = () => {
-    switchRole("siswa");
-    router.push("/siswa/beranda");
   };
 
   return (
@@ -76,6 +106,39 @@ export default function MasukPage() {
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md px-4">
         <div className="bg-white py-8 px-6 shadow-sm border border-gray-200/80 rounded-2xl sm:px-10">
+          {authUser && (
+            <div className="mb-5 p-4 rounded-xl bg-orange-50/90 border border-orange-200 text-xs">
+              <div className="flex items-center justify-between">
+                <span className="text-[#5A6B78]">Sedang terhubung sebagai:</span>
+                <span className="font-bold text-[#EA580C] uppercase tracking-wider text-[11px] bg-orange-100 px-2 py-0.5 rounded-md">
+                  {currentUser?.role || activeRole}
+                </span>
+              </div>
+              <div className="font-semibold text-[#1F2937] text-sm mt-1">
+                {currentUser?.nama || authUser.displayName || authUser.email}
+              </div>
+              <div className="text-[11px] text-[#5A6B78]">{authUser.email}</div>
+              <div className="mt-3 flex items-center gap-2 pt-2.5 border-t border-orange-200/70">
+                <button
+                  type="button"
+                  onClick={() => routeByRole(currentUser?.role || activeRole)}
+                  className="flex-1 py-1.5 px-3 rounded-lg bg-[#EA580C] hover:bg-[#c2410c] text-white font-semibold text-xs transition-all shadow-xs text-center"
+                >
+                  Ke Dasbor ({currentUser?.role || activeRole})
+                </button>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    await logoutUser();
+                  }}
+                  className="py-1.5 px-3 rounded-lg bg-white hover:bg-gray-50 border border-gray-200 text-gray-700 font-semibold text-xs transition-all"
+                >
+                  Keluar Akun
+                </button>
+              </div>
+            </div>
+          )}
+
           {error && (
             <div className="mb-4 p-3 rounded-xl bg-red-50 border border-red-200 text-sm text-red-700">
               {error}
@@ -113,10 +176,20 @@ export default function MasukPage() {
 
             <button
               type="submit"
-              className="w-full mt-2 py-2.5 px-4 rounded-xl bg-[#EA580C] hover:bg-[#c2410c] text-white font-semibold text-sm transition-all shadow-sm shadow-[#EA580C]/20 flex items-center justify-center gap-2"
+              disabled={loading}
+              className="w-full mt-2 py-2.5 px-4 rounded-xl bg-[#EA580C] hover:bg-[#c2410c] text-white font-semibold text-sm transition-all shadow-sm shadow-[#EA580C]/20 flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              <span>Masuk</span>
-              <ArrowRight className="w-4 h-4" />
+              {loading ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>Memproses...</span>
+                </>
+              ) : (
+                <>
+                  <span>Masuk</span>
+                  <ArrowRight className="w-4 h-4" />
+                </>
+              )}
             </button>
           </form>
 
@@ -130,8 +203,10 @@ export default function MasukPage() {
           </div>
 
           <button
+            type="button"
+            disabled={loading}
             onClick={handleGoogleLogin}
-            className="w-full py-2.5 px-4 rounded-xl border border-gray-200 bg-white hover:bg-gray-50 text-sm font-semibold text-[#1F2937] transition-all flex items-center justify-center gap-3 shadow-xs"
+            className="w-full py-2.5 px-4 rounded-xl border border-gray-200 bg-white hover:bg-gray-50 text-sm font-semibold text-[#1F2937] transition-all flex items-center justify-center gap-3 shadow-xs disabled:opacity-60 disabled:cursor-not-allowed"
           >
             <svg className="w-5 h-5" viewBox="0 0 24 24">
               <path
@@ -151,7 +226,7 @@ export default function MasukPage() {
                 d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
               />
             </svg>
-            <span>Masuk dengan Google</span>
+            <span>{loading ? "Menghubungkan ke Google..." : "Masuk dengan Google"}</span>
           </button>
 
           {/* Quick Demo Logins */}
@@ -163,11 +238,11 @@ export default function MasukPage() {
             <div className="grid grid-cols-2 gap-2 text-xs">
               <button
                 type="button"
-                onClick={() => handleQuickLogin("siswa", "raka@example.com")}
+                onClick={() => handleQuickLogin("siswa", "raka@langkahjuara.id")}
                 className="p-2 text-left rounded-lg bg-gray-50 hover:bg-orange-50 hover:border-orange-200 border border-gray-200/60 transition-colors"
               >
                 <div className="font-semibold text-[#1F2937]">Raka (Siswa)</div>
-                <div className="text-[11px] text-[#5A6B78]">raka@example.com</div>
+                <div className="text-[11px] text-[#5A6B78]">raka@langkahjuara.id</div>
               </button>
               <button
                 type="button"

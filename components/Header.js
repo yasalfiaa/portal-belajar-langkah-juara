@@ -34,7 +34,7 @@ export default function Header({ onOpenSidebar, title }) {
         <div className="flex items-center bg-[#F7F5F2] border border-gray-200/80 rounded-xl p-1 text-xs">
           <span className="text-[#5A6B78] px-2 font-semibold hidden md:inline">Akun:</span>
           <select
-            value={currentUser.id}
+            value={currentUser?.aliasId || currentUser?.id}
             onChange={(e) => switchUser(e.target.value)}
             className="bg-transparent font-bold text-[#EA580C] outline-hidden cursor-pointer pr-1"
           >

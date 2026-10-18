@@ -26,11 +26,11 @@ function SiswaTugasDetailContent({ params }) {
 
   // Business Decision 3: "Bolehkah Raka melihat nilai Salsa? Tidak, Raka mendaftar di kelas yang berbeda (UTBK) sehingga muncul notifikasi tugas tidak ditemukan (4.5)"
   const currentClass = currentTugas ? kelas.find((k) => k.id === currentTugas.kelasId) : null;
-  const isEnrolledInClass = currentClass?.siswaIds?.includes(currentUser.id);
+  const isEnrolledInClass = currentClass?.siswaIds?.includes(currentUser.id) || (currentUser.aliasId && currentClass?.siswaIds?.includes(currentUser.aliasId));
   const canAccess = currentUser.role === "super_admin" || isEnrolledInClass;
 
   const mySubmission = currentTugas
-    ? pengumpulan.find((p) => p.tugasId === tugasId && p.siswaId === currentUser.id)
+    ? pengumpulan.find((p) => p.tugasId === tugasId && (p.siswaId === currentUser.id || p.siswaId === currentUser.aliasId))
     : null;
 
   const [tautanInput, setTautanInput] = useState(mySubmission?.tautan || "");

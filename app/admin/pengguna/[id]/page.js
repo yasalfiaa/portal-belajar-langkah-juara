@@ -14,6 +14,7 @@ import {
   AlertCircle,
   CheckCircle,
   AlertTriangle,
+  Trash2,
 } from "lucide-react";
 
 function EditPenggunaContent({ params }) {
@@ -21,7 +22,7 @@ function EditPenggunaContent({ params }) {
   const userId = unwrappedParams.id;
   const router = useRouter();
 
-  const { users, currentUser, updateUserProfile } = useData();
+  const { users, currentUser, updateUserProfile, deleteUser } = useData();
 
   // Otorisasi: Bagian edit hak akses hanya berlaku apabila akun yang terdaftar adalah Super Admin
   if (currentUser?.role !== "super_admin") {
@@ -51,10 +52,12 @@ function EditPenggunaContent({ params }) {
     );
   }
 
-  const targetUser = users.find((u) => u.id === userId);
+  const targetUser = users.find((u) => u.id === userId || u.aliasId === userId);
 
   const [role, setRole] = useState(targetUser?.role || "siswa");
   const [aktif, setAktif] = useState(targetUser?.aktif !== false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
 
@@ -81,9 +84,9 @@ function EditPenggunaContent({ params }) {
     );
   }
 
-  const isSelf = targetUser.id === currentUser.id;
+  const isSelf = targetUser.id === currentUser.id || targetUser.aliasId === currentUser.id;
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setErrorMsg("");
     setSuccessMsg("");
@@ -107,15 +110,45 @@ function EditPenggunaContent({ params }) {
       return;
     }
 
-    updateUserProfile(targetUser.id, {
-      role,
-      aktif,
-    });
+    setIsSaving(true);
+    try {
+      await updateUserProfile(targetUser.id, {
+        role,
+        aktif,
+      });
 
-    setSuccessMsg("Perubahan peran dan status akun berhasil disimpan!");
-    setTimeout(() => {
-      router.push("/admin/pengguna");
-    }, 1500);
+      setSuccessMsg("Perubahan peran dan status akun berhasil disimpan ke Firebase!");
+      setTimeout(() => {
+        router.push("/admin/pengguna");
+      }, 1200);
+    } catch (err) {
+      console.error("Gagal menyimpan ke Firebase:", err);
+      setErrorMsg(err.message || "Gagal menyimpan perubahan ke database Firebase. Silakan coba lagi.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (isSelf) return;
+    const confirmDelete = window.confirm(
+      `Apakah Anda yakin ingin menghapus akun "${targetUser.nama}" (${targetUser.email}) dari portal dan database Firebase? Tindakan ini tidak dapat dibatalkan.`
+    );
+    if (!confirmDelete) return;
+
+    setIsDeleting(true);
+    setErrorMsg("");
+    try {
+      await deleteUser(targetUser.id);
+      setSuccessMsg("Pengguna berhasil dihapus dari portal.");
+      setTimeout(() => {
+        router.push("/admin/pengguna");
+      }, 1200);
+    } catch (err) {
+      console.error("Gagal menghapus pengguna:", err);
+      setErrorMsg(err.message || "Gagal menghapus pengguna dari database.");
+      setIsDeleting(false);
+    }
   };
 
   return (
@@ -217,20 +250,45 @@ function EditPenggunaContent({ params }) {
             </label>
           </div>
 
-          <div className="flex justify-end gap-2 pt-4 border-t border-gray-100">
-            <Link
-              href="/admin/pengguna"
-              className="px-4 py-2.5 rounded-xl text-xs font-semibold text-[#5A6B78] hover:bg-gray-100"
-            >
-              Batal
-            </Link>
-            <button
-              type="submit"
-              className="px-5 py-2.5 rounded-xl bg-[#EA580C] hover:bg-[#c2410c] text-white text-xs font-bold transition-all shadow-sm shadow-[#EA580C]/20 flex items-center gap-2"
-            >
-              <Save className="w-4 h-4" />
-              <span>Simpan Perubahan</span>
-            </button>
+          <div className="flex flex-col-reverse sm:flex-row sm:items-center justify-between gap-3 pt-4 border-t border-gray-100">
+            <div>
+              {!isSelf && (
+                <button
+                  type="button"
+                  disabled={isDeleting || isSaving}
+                  onClick={handleDelete}
+                  className="px-4 py-2.5 rounded-xl border border-red-200 text-red-600 hover:bg-red-50 text-xs font-semibold flex items-center gap-1.5 transition-colors disabled:opacity-50"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  <span>{isDeleting ? "Menghapus Akun..." : "Hapus Akun Pengguna"}</span>
+                </button>
+              )}
+            </div>
+            <div className="flex items-center justify-end gap-2">
+              <Link
+                href="/admin/pengguna"
+                className="px-4 py-2.5 rounded-xl text-xs font-semibold text-[#5A6B78] hover:bg-gray-100"
+              >
+                Batal
+              </Link>
+              <button
+                type="submit"
+                disabled={isSaving || isDeleting}
+                className="px-5 py-2.5 rounded-xl bg-[#EA580C] hover:bg-[#c2410c] text-white text-xs font-bold transition-all shadow-sm shadow-[#EA580C]/20 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isSaving ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    <span>Menyimpan ke Firebase...</span>
+                  </>
+                ) : (
+                  <>
+                    <Save className="w-4 h-4" />
+                    <span>Simpan Perubahan</span>
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </form>
       </div>

@@ -19,7 +19,9 @@ export default function SiswaBerandaPage() {
   const { currentUser, kelas, tugas, pengumpulan } = useData();
 
   // Find classes where currentUser is in siswaIds
-  const myClasses = kelas.filter((k) => k.siswaIds?.includes(currentUser.id));
+  const myClasses = kelas.filter(
+    (k) => k.siswaIds?.includes(currentUser.id) || (currentUser.aliasId && k.siswaIds?.includes(currentUser.aliasId))
+  );
   const nextClass = myClasses.length > 0 ? myClasses[0] : null;
 
   // Find tasks belonging to student's enrolled classes
@@ -29,7 +31,7 @@ export default function SiswaBerandaPage() {
   const uncompletedTasks = myTugas
     .map((t) => {
       const studentSubmission = pengumpulan.find(
-        (p) => p.tugasId === t.id && p.siswaId === currentUser.id
+        (p) => p.tugasId === t.id && (p.siswaId === currentUser.id || p.siswaId === currentUser.aliasId)
       );
       const status = getTugasStatus(t, studentSubmission);
       return { ...t, status, studentSubmission };

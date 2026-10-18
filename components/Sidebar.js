@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useData } from "@/context/DataContext";
 import {
   Home,
@@ -18,12 +18,14 @@ import {
   Shield,
   FileBarChart,
   LogIn,
+  LogOut,
   Sparkles,
 } from "lucide-react";
 
 export default function Sidebar({ isOpen, onClose }) {
   const pathname = usePathname();
-  const { activeRole, switchRole, switchUser, currentUser, users } = useData();
+  const router = useRouter();
+  const { activeRole, switchRole, switchUser, currentUser, users, logoutUser } = useData();
 
   const isActive = (path) => {
     if (path === "/" && pathname === "/") return true;
@@ -239,7 +241,7 @@ export default function Sidebar({ isOpen, onClose }) {
         {/* User Footer Profile */}
         <div className="p-4 border-t border-gray-200/80 bg-white">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-orange-100 text-[#EA580C] font-bold flex items-center justify-center text-sm border border-orange-200">
+            <div className="w-10 h-10 rounded-full bg-orange-100 text-[#EA580C] font-bold flex items-center justify-center text-sm border border-orange-200 shrink-0">
               {currentUser?.nama?.charAt(0) || "U"}
             </div>
             <div className="flex-1 min-w-0">
@@ -247,9 +249,19 @@ export default function Sidebar({ isOpen, onClose }) {
                 {currentUser?.nama || "Pengguna"}
               </p>
               <p className="text-xs text-[#5A6B78] truncate">
-                {currentUser?.email || "user@example.com"}
+                {currentUser?.email || "pengguna@langkahjuara.id"}
               </p>
             </div>
+            <button
+              onClick={async () => {
+                await logoutUser();
+                router.push("/masuk");
+              }}
+              title="Keluar / Ganti Akun"
+              className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+            >
+              <LogOut className="w-4 h-4" />
+            </button>
           </div>
         </div>
       </aside>

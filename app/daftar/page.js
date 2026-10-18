@@ -1,31 +1,41 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useData } from "@/context/DataContext";
-import { Sparkles, ArrowRight } from "lucide-react";
+import { useData, getFirebaseErrorMessage } from "@/context/DataContext";
+import { Sparkles, ArrowRight, Loader2, CheckCircle2 } from "lucide-react";
 
 export default function DaftarPage() {
   const router = useRouter();
-  const { users, switchRole } = useData();
+  const {
+    registerWithEmail,
+    loginWithGoogle,
+    logoutUser,
+    currentUser,
+    authUser,
+    authLoading,
+    activeRole,
+  } = useData();
 
   const [nama, setNama] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+    setSuccess("");
 
     if (!nama.trim()) {
-      setError("Nama wajib diisi.");
+      setError("Nama lengkap wajib diisi.");
       return;
     }
     if (!email.trim()) {
-      setError("Email wajib diisi.");
+      setError("Alamat email wajib diisi.");
       return;
     }
     if (password.length < 6) {
@@ -33,23 +43,45 @@ export default function DaftarPage() {
       return;
     }
 
-    // Check email uniqueness
-    const exists = users.some((u) => u.email.toLowerCase() === email.toLowerCase());
-    if (exists) {
-      setError("Email sudah terdaftar. Silakan gunakan email lain atau masuk.");
-      return;
-    }
+    setLoading(true);
+    try {
+      await registerWithEmail({
+        nama: nama.trim(),
+        email: email.trim(),
+        password,
+      });
 
-    setSuccess("Akun berhasil didaftarkan sebagai Siswa. Mengarahkan ke Beranda...");
-    switchRole("siswa");
-    setTimeout(() => {
-      router.push("/siswa/beranda");
-    }, 1000);
+      setSuccess("Akun berhasil didaftarkan! Mengarahkan ke Beranda Siswa...");
+      setTimeout(() => {
+        router.push("/siswa/beranda");
+      }, 800);
+    } catch (err) {
+      console.warn("Registrasi error:", err);
+      setError(getFirebaseErrorMessage(err));
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleGoogleSignup = () => {
-    switchRole("siswa");
-    router.push("/siswa/beranda");
+  const handleGoogleSignup = async () => {
+    setError("");
+    setSuccess("");
+    setLoading(true);
+    try {
+      const profile = await loginWithGoogle();
+      setSuccess("Berhasil masuk dengan akun Google! Mengarahkan...");
+      setTimeout(() => {
+        if (profile?.role === "super_admin") router.push("/admin/dasbor");
+        else if (profile?.role === "staf") router.push("/staf/dasbor");
+        else if (profile?.role === "tutor") router.push("/tutor/dasbor");
+        else router.push("/siswa/beranda");
+      }, 600);
+    } catch (err) {
+      console.warn("Google signup error:", err);
+      setError(getFirebaseErrorMessage(err));
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -71,6 +103,45 @@ export default function DaftarPage() {
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md px-4">
         <div className="bg-white py-8 px-6 shadow-sm border border-gray-200/80 rounded-2xl sm:px-10">
+          {authUser && (
+            <div className="mb-5 p-4 rounded-xl bg-orange-50/90 border border-orange-200 text-xs">
+              <div className="flex items-center justify-between">
+                <span className="text-[#5A6B78]">Sedang terhubung sebagai:</span>
+                <span className="font-bold text-[#EA580C] uppercase tracking-wider text-[11px] bg-orange-100 px-2 py-0.5 rounded-md">
+                  {currentUser?.role || activeRole}
+                </span>
+              </div>
+              <div className="font-semibold text-[#1F2937] text-sm mt-1">
+                {currentUser?.nama || authUser.displayName || authUser.email}
+              </div>
+              <div className="text-[11px] text-[#5A6B78]">{authUser.email}</div>
+              <div className="mt-3 flex items-center gap-2 pt-2.5 border-t border-orange-200/70">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const r = currentUser?.role || activeRole;
+                    if (r === "super_admin") router.push("/admin/dasbor");
+                    else if (r === "staf") router.push("/staf/dasbor");
+                    else if (r === "tutor") router.push("/tutor/dasbor");
+                    else router.push("/siswa/beranda");
+                  }}
+                  className="flex-1 py-1.5 px-3 rounded-lg bg-[#EA580C] hover:bg-[#c2410c] text-white font-semibold text-xs transition-all shadow-xs text-center"
+                >
+                  Ke Dasbor ({currentUser?.role || activeRole})
+                </button>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    await logoutUser();
+                  }}
+                  className="py-1.5 px-3 rounded-lg bg-white hover:bg-gray-50 border border-gray-200 text-gray-700 font-semibold text-xs transition-all"
+                >
+                  Keluar Akun
+                </button>
+              </div>
+            </div>
+          )}
+
           {error && (
             <div className="mb-4 p-3 rounded-xl bg-red-50 border border-red-200 text-sm text-red-700">
               {error}
@@ -78,8 +149,9 @@ export default function DaftarPage() {
           )}
 
           {success && (
-            <div className="mb-4 p-3 rounded-xl bg-green-50 border border-green-200 text-sm text-green-700">
-              {success}
+            <div className="mb-4 p-3 rounded-xl bg-green-50 border border-green-200 text-sm text-green-700 flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 shrink-0 text-green-600" />
+              <span>{success}</span>
             </div>
           )}
 
@@ -91,10 +163,11 @@ export default function DaftarPage() {
               <input
                 type="text"
                 required
+                disabled={loading}
                 value={nama}
                 onChange={(e) => setNama(e.target.value)}
-                placeholder="Contoh: Salsabila Putri"
-                className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-hidden focus:border-[#EA580C] focus:ring-2 focus:ring-[#EA580C]/20 transition-all"
+                placeholder="Contoh: Salsa Putri"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-hidden focus:border-[#EA580C] focus:ring-2 focus:ring-[#EA580C]/20 transition-all disabled:bg-gray-50 disabled:cursor-not-allowed"
               />
             </div>
 
@@ -105,10 +178,11 @@ export default function DaftarPage() {
               <input
                 type="email"
                 required
+                disabled={loading}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="nama@email.com"
-                className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-hidden focus:border-[#EA580C] focus:ring-2 focus:ring-[#EA580C]/20 transition-all"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-hidden focus:border-[#EA580C] focus:ring-2 focus:ring-[#EA580C]/20 transition-all disabled:bg-gray-50 disabled:cursor-not-allowed"
               />
             </div>
 
@@ -120,20 +194,31 @@ export default function DaftarPage() {
                 type="password"
                 required
                 minLength={6}
+                disabled={loading}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Minimal 6 karakter"
-                className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-hidden focus:border-[#EA580C] focus:ring-2 focus:ring-[#EA580C]/20 transition-all"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-hidden focus:border-[#EA580C] focus:ring-2 focus:ring-[#EA580C]/20 transition-all disabled:bg-gray-50 disabled:cursor-not-allowed"
               />
               <span className="text-[11px] text-[#5A6B78] mt-1 block">Minimal 6 karakter</span>
             </div>
 
             <button
               type="submit"
-              className="w-full mt-2 py-2.5 px-4 rounded-xl bg-[#EA580C] hover:bg-[#c2410c] text-white font-semibold text-sm transition-all shadow-sm shadow-[#EA580C]/20 flex items-center justify-center gap-2"
+              disabled={loading}
+              className="w-full mt-2 py-2.5 px-4 rounded-xl bg-[#EA580C] hover:bg-[#c2410c] text-white font-semibold text-sm transition-all shadow-sm shadow-[#EA580C]/20 flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              <span>Daftar</span>
-              <ArrowRight className="w-4 h-4" />
+              {loading ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>Mendaftarkan akun...</span>
+                </>
+              ) : (
+                <>
+                  <span>Daftar</span>
+                  <ArrowRight className="w-4 h-4" />
+                </>
+              )}
             </button>
           </form>
 
@@ -147,8 +232,10 @@ export default function DaftarPage() {
           </div>
 
           <button
+            type="button"
+            disabled={loading}
             onClick={handleGoogleSignup}
-            className="w-full py-2.5 px-4 rounded-xl border border-gray-200 bg-white hover:bg-gray-50 text-sm font-semibold text-[#1F2937] transition-all flex items-center justify-center gap-3 shadow-xs"
+            className="w-full py-2.5 px-4 rounded-xl border border-gray-200 bg-white hover:bg-gray-50 text-sm font-semibold text-[#1F2937] transition-all flex items-center justify-center gap-3 shadow-xs disabled:opacity-60 disabled:cursor-not-allowed"
           >
             <svg className="w-5 h-5" viewBox="0 0 24 24">
               <path
@@ -168,7 +255,7 @@ export default function DaftarPage() {
                 d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
               />
             </svg>
-            <span>Masuk dengan Google</span>
+            <span>{loading ? "Menghubungkan ke Google..." : "Masuk dengan Google"}</span>
           </button>
 
           <div className="mt-6 text-center text-xs text-[#5A6B78]">

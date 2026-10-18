@@ -14,7 +14,7 @@ export default function SiswaProgramPage() {
   const activePrograms = programs.filter((p) => p.aktif);
 
   // Student's submissions
-  const myPendaftaran = pendaftaran.filter((p) => p.siswaId === currentUser.id);
+  const myPendaftaran = pendaftaran.filter((p) => p.siswaId === currentUser.id || p.siswaId === currentUser.aliasId);
 
   const handleAjukan = (programId) => {
     const result = addPendaftaran(programId, currentUser.id);

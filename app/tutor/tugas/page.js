@@ -11,7 +11,7 @@ export default function TugasDanNilaiTutorOverviewPage() {
 
   // If tutor, get classes assigned to them (or all if super admin)
   const tutorClasses = currentUser.role === "tutor"
-    ? kelas.filter((k) => k.tutorId === currentUser.id)
+    ? kelas.filter((k) => k.tutorId === currentUser.id || k.tutorId === currentUser.aliasId)
     : kelas;
 
   const tutorClassIds = tutorClasses.map((k) => k.id);
