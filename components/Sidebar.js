@@ -78,13 +78,14 @@ export default function Sidebar({ isOpen, onClose }) {
         <div className="p-3 bg-[#F7F5F2] border-b border-gray-200/80">
           <div className="text-[11px] font-semibold text-[#5A6B78] uppercase tracking-wider mb-1.5 px-1 flex items-center justify-between">
             <span>Simulasi Pengguna:</span>
-            <span className="text-[#EA580C] font-bold uppercase">{currentUser.role}</span>
+            <span className="text-[#EA580C] font-bold uppercase">{currentUser?.role || "Belum Masuk"}</span>
           </div>
           <select
-            value={currentUser.id}
+            value={currentUser?.id || ""}
             onChange={(e) => switchUser(e.target.value)}
             className="w-full px-2 py-1.5 rounded-lg bg-white border border-gray-200 text-xs font-semibold text-[#1F2937] outline-hidden focus:border-[#EA580C]"
           >
+            <option value="">-- Mode Tamu (Belum Masuk) --</option>
             <option value="user-raka">Raka Pratama (Siswa UTBK)</option>
             <option value="user-salsa">Salsabila Putri (Siswa SMP)</option>
             <option value="user-fira">Kak Fira (Staf)</option>
@@ -97,7 +98,7 @@ export default function Sidebar({ isOpen, onClose }) {
         {/* Navigation Links according to Rancangan Portal Bimbel.md */}
         <nav className="flex-1 overflow-y-auto px-4 py-4 space-y-6">
           {/* Siswa Section: Tampil untuk Siswa atau Super Admin */}
-          {(currentUser.role === "siswa" || currentUser.role === "super_admin") && (
+          {(currentUser?.role === "siswa" || currentUser?.role === "super_admin") && (
             <div>
               <div className="text-[11px] font-bold text-[#5A6B78] uppercase tracking-wider px-3 mb-2 flex items-center justify-between">
                 <span>Siswa</span>
@@ -125,7 +126,7 @@ export default function Sidebar({ isOpen, onClose }) {
           )}
 
           {/* Staf Section: Tampil untuk Staf atau Super Admin */}
-          {(currentUser.role === "staf" || currentUser.role === "super_admin") && (
+          {(currentUser?.role === "staf" || currentUser?.role === "super_admin") && (
             <div>
               <div className="text-[11px] font-bold text-[#5A6B78] uppercase tracking-wider px-3 mb-2 flex items-center justify-between">
                 <span>Staf</span>
@@ -148,7 +149,7 @@ export default function Sidebar({ isOpen, onClose }) {
                   <Users className="w-4 h-4 shrink-0" />
                   <span>Data Siswa</span>
                 </Link>
-                {currentUser.role === "staf" && (
+                {currentUser?.role === "staf" && (
                   <Link href="/profil" className={navItemClass("/profil")}>
                     <User className="w-4 h-4 shrink-0" />
                     <span>Profil</span>
@@ -159,7 +160,7 @@ export default function Sidebar({ isOpen, onClose }) {
           )}
 
           {/* Tutor Section: Tampil untuk Tutor atau Super Admin */}
-          {(currentUser.role === "tutor" || currentUser.role === "super_admin") && (
+          {(currentUser?.role === "tutor" || currentUser?.role === "super_admin") && (
             <div>
               <div className="text-[11px] font-bold text-[#5A6B78] uppercase tracking-wider px-3 mb-2 flex items-center justify-between">
                 <span>Tutor</span>
@@ -178,7 +179,7 @@ export default function Sidebar({ isOpen, onClose }) {
                   <Award className="w-4 h-4 shrink-0" />
                   <span>Tugas dan Nilai</span>
                 </Link>
-                {currentUser.role === "tutor" && (
+                {currentUser?.role === "tutor" && (
                   <Link href="/profil" className={navItemClass("/profil")}>
                     <User className="w-4 h-4 shrink-0" />
                     <span>Profil</span>
@@ -189,7 +190,7 @@ export default function Sidebar({ isOpen, onClose }) {
           )}
 
           {/* Super Admin Section: HANYA TAMPIL bila akun yang masuk adalah Super Admin */}
-          {currentUser.role === "super_admin" && (
+          {currentUser?.role === "super_admin" && (
             <div>
               <div className="text-[11px] font-bold text-[#5A6B78] uppercase tracking-wider px-3 mb-2 flex items-center justify-between">
                 <span>Super Admin</span>

@@ -5,10 +5,10 @@ import Link from "next/link";
 import PortalLayout from "@/components/PortalLayout";
 import Modal from "@/components/Modal";
 import { useData, formatRupiah } from "@/context/DataContext";
-import { BookOpen, Plus, Check, X, CheckCircle, AlertCircle, AlertTriangle, ChevronLeft } from "lucide-react";
+import { BookOpen, Plus, Check, X, CheckCircle, AlertCircle, AlertTriangle, ChevronLeft, Trash2 } from "lucide-react";
 
 export default function ProgramAdminPage() {
-  const { programs, addProgram, updateProgram, currentUser } = useData();
+  const { programs, addProgram, updateProgram, deleteProgram, currentUser } = useData();
 
   if (currentUser?.role !== "super_admin") {
     return (
@@ -90,6 +90,22 @@ export default function ProgramAdminPage() {
     updateProgram(progId, { aktif: !currentStatus });
   };
 
+  const handleDeleteProgram = async (progId, progNama) => {
+    const confirmed = window.confirm(
+      `Apakah Anda yakin ingin menghapus program "${progNama}"? Tindakan ini akan menghapus program secara permanen dari katalog portal belajar.`
+    );
+    if (!confirmed) return;
+
+    try {
+      await deleteProgram(progId);
+      setNotification(`Program "${progNama}" berhasil dihapus.`);
+      setTimeout(() => setNotification(""), 3500);
+    } catch (err) {
+      console.error("Gagal menghapus program:", err);
+      setErrorMsg("Gagal menghapus program.");
+    }
+  };
+
   return (
     <PortalLayout title="Kelola Program (Admin)">
       <div className="space-y-6">
@@ -160,16 +176,28 @@ export default function ProgramAdminPage() {
                       )}
                     </td>
                     <td className="py-4 px-6 text-right">
-                      <button
-                        onClick={() => handleToggleAktif(p.id, p.aktif)}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors ${
-                          p.aktif
-                            ? "border-red-200 text-red-600 hover:bg-red-50"
-                            : "border-green-200 text-green-700 hover:bg-green-50"
-                        }`}
-                      >
-                        {p.aktif ? "Nonaktifkan" : "Aktifkan"}
-                      </button>
+                      <div className="flex items-center justify-end gap-2">
+                        <button
+                          type="button"
+                          onClick={() => handleToggleAktif(p.id, p.aktif)}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors ${
+                            p.aktif
+                              ? "border-amber-200 text-amber-700 hover:bg-amber-50"
+                              : "border-green-200 text-green-700 hover:bg-green-50"
+                          }`}
+                        >
+                          {p.aktif ? "Nonaktifkan" : "Aktifkan"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteProgram(p.id, p.nama)}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 text-xs font-semibold transition-colors"
+                          title="Hapus Program"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                          <span>Hapus</span>
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}

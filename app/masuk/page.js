@@ -1,13 +1,16 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useData, getFirebaseErrorMessage } from "@/context/DataContext";
 import { Sparkles, ArrowRight, UserCheck, Loader2 } from "lucide-react";
 
-export default function MasukPage() {
+function MasukForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectParam = searchParams.get("redirect");
+
   const {
     users,
     currentUser,
@@ -26,8 +29,12 @@ export default function MasukPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // Redirect helper based on user role as per Peta Route
+  // Redirect helper based on user role as per Peta Route (or target redirect URL)
   const routeByRole = (role) => {
+    if (redirectParam && redirectParam.startsWith("/") && !redirectParam.startsWith("/masuk")) {
+      router.push(redirectParam);
+      return;
+    }
     if (role === "siswa") router.push("/siswa/beranda");
     else if (role === "staf") router.push("/staf/dasbor");
     else if (role === "tutor") router.push("/tutor/dasbor");
@@ -280,5 +287,19 @@ export default function MasukPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function MasukPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-[#F7F5F2] flex items-center justify-center p-4">
+          <div className="w-10 h-10 border-3 border-orange-200 border-t-[#EA580C] rounded-full animate-spin" />
+        </div>
+      }
+    >
+      <MasukForm />
+    </Suspense>
   );
 }

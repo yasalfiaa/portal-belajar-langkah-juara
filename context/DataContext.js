@@ -117,6 +117,22 @@ export function deduplicateUsers(userList) {
   return Array.from(emailMap.values());
 }
 
+export function toIsoDateString(val) {
+  if (!val) return "";
+  if (val.toDate && typeof val.toDate === "function") {
+    return val.toDate().toISOString();
+  }
+  return String(val);
+}
+
+export function mergeRemoteOverLocal(localList, remoteList) {
+  if (!Array.isArray(localList)) return remoteList || [];
+  if (!Array.isArray(remoteList)) return localList || [];
+  const map = new Map(localList.map((item) => [item.id, item]));
+  remoteList.forEach((item) => map.set(item.id, item));
+  return Array.from(map.values());
+}
+
 const DataContext = createContext(null);
 
 export function DataProvider({ children }) {
@@ -127,14 +143,15 @@ export function DataProvider({ children }) {
   const [pertemuan, setPertemuan] = useState(initialPertemuan);
   const [tugas, setTugas] = useState(initialTugas);
   const [pengumpulan, setPengumpulan] = useState(initialPengumpulan);
-  const [activeRole, setActiveRole] = useState("siswa"); // "siswa" | "staf" | "tutor" | "super_admin"
-  const [currentUserId, setCurrentUserId] = useState("user-raka");
+  const [activeRole, setActiveRole] = useState(null); // null sampai role selesai dibaca dari users/{uid}
+  const [currentUserId, setCurrentUserId] = useState(null);
   const [authUser, setAuthUser] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
 
-  // Sinkronisasi dokumen users yang dipasang secara manual dari Cloud Firestore
+  // Sinkronisasi data awal dari Cloud Firestore untuk semua 7 koleksi
   useEffect(() => {
-    async function fetchFirestoreUsers() {
+    async function fetchAllFirestoreData() {
+      // 1. users
       try {
         const snap = await getDocs(collection(db, "users"));
         if (!snap.empty) {
@@ -143,16 +160,119 @@ export function DataProvider({ children }) {
             return {
               id: d.id,
               ...data,
-              dibuatPada: data.dibuatPada?.toDate ? data.dibuatPada.toDate().toISOString() : data.dibuatPada,
+              dibuatPada: toIsoDateString(data.dibuatPada),
             };
           });
           setUsers((prev) => deduplicateUsers([...prev, ...remoteUsers]));
         }
       } catch (e) {
-        console.warn("Gagal memuat dokumen users manual dari Firestore:", e);
+        console.warn("Gagal memuat dokumen users dari Firestore:", e);
+      }
+
+      // 2. program (koleksi "program" sesuai PRD 7.1)
+      try {
+        const snap = await getDocs(collection(db, "program"));
+        if (!snap.empty) {
+          const remotePrograms = snap.docs.map((d) => {
+            const data = d.data();
+            return {
+              id: d.id,
+              ...data,
+              harga: Number(data.harga || 0),
+              jumlahPertemuan: Number(data.jumlahPertemuan || 0),
+              aktif: data.aktif !== false,
+            };
+          });
+          setPrograms((prev) => mergeRemoteOverLocal(prev, remotePrograms));
+        }
+      } catch (e) {
+        console.warn("Gagal memuat program dari Firestore:", e);
+      }
+
+      // 3. pendaftaran
+      try {
+        const snap = await getDocs(collection(db, "pendaftaran"));
+        if (!snap.empty) {
+          const remotePendaftaran = snap.docs.map((d) => {
+            const data = d.data();
+            return {
+              id: d.id,
+              ...data,
+              dibuatPada: toIsoDateString(data.dibuatPada),
+            };
+          });
+          setPendaftaran((prev) => mergeRemoteOverLocal(prev, remotePendaftaran));
+        }
+      } catch (e) {
+        console.warn("Gagal memuat pendaftaran dari Firestore:", e);
+      }
+
+      // 4. kelas
+      try {
+        const snap = await getDocs(collection(db, "kelas"));
+        if (!snap.empty) {
+          const remoteKelas = snap.docs.map((d) => ({
+            id: d.id,
+            ...d.data(),
+          }));
+          setKelas((prev) => mergeRemoteOverLocal(prev, remoteKelas));
+        }
+      } catch (e) {
+        console.warn("Gagal memuat kelas dari Firestore:", e);
+      }
+
+      // 5. pertemuan
+      try {
+        const snap = await getDocs(collection(db, "pertemuan"));
+        if (!snap.empty) {
+          const remotePertemuan = snap.docs.map((d) => ({
+            id: d.id,
+            ...d.data(),
+          }));
+          setPertemuan((prev) => mergeRemoteOverLocal(prev, remotePertemuan));
+        }
+      } catch (e) {
+        console.warn("Gagal memuat pertemuan dari Firestore:", e);
+      }
+
+      // 6. tugas
+      try {
+        const snap = await getDocs(collection(db, "tugas"));
+        if (!snap.empty) {
+          const remoteTugas = snap.docs.map((d) => {
+            const data = d.data();
+            return {
+              id: d.id,
+              ...data,
+              batasWaktu: toIsoDateString(data.batasWaktu),
+            };
+          });
+          setTugas((prev) => mergeRemoteOverLocal(prev, remoteTugas));
+        }
+      } catch (e) {
+        console.warn("Gagal memuat tugas dari Firestore:", e);
+      }
+
+      // 7. pengumpulan
+      try {
+        const snap = await getDocs(collection(db, "pengumpulan"));
+        if (!snap.empty) {
+          const remotePengumpulan = snap.docs.map((d) => {
+            const data = d.data();
+            return {
+              id: d.id,
+              ...data,
+              dikumpulkanPada: toIsoDateString(data.dikumpulkanPada),
+            };
+          });
+          setPengumpulan((prev) => mergeRemoteOverLocal(prev, remotePengumpulan));
+        }
+      } catch (e) {
+        console.warn("Gagal memuat pengumpulan dari Firestore:", e);
       }
     }
-    fetchFirestoreUsers();
+
+    fetchAllFirestoreData();
   }, []);
 
   // Memeriksa dokumen users/{uid}. Bila belum ada, buat dokumen dengan field sesuai PRD 7.1.
@@ -261,6 +381,27 @@ export function DataProvider({ children }) {
         } catch (e) {
           console.warn("Gagal inisialisasi sesi login:", e);
         }
+      } else {
+        // Jika tidak ada sesi Firebase Auth, periksa apakah ada sesi simulasi pengujian lokal
+        try {
+          const savedSimId = typeof window !== "undefined" ? localStorage.getItem("langkah_juara_sim_user") : null;
+          if (savedSimId) {
+            const u = users.find((item) => item.id === savedSimId || item.aliasId === savedSimId);
+            if (u) {
+              setCurrentUserId(u.id);
+              setActiveRole(u.role);
+            } else {
+              setCurrentUserId(null);
+              setActiveRole(null);
+            }
+          } else {
+            setCurrentUserId(null);
+            setActiveRole(null);
+          }
+        } catch (e) {
+          setCurrentUserId(null);
+          setActiveRole(null);
+        }
       }
       setAuthLoading(false);
     });
@@ -305,6 +446,9 @@ export function DataProvider({ children }) {
     const u = users.find((item) => item.role === role);
     if (u) {
       setCurrentUserId(u.id);
+      try {
+        localStorage.setItem("langkah_juara_sim_user", u.id);
+      } catch (e) {}
     } else {
       if (role === "siswa") setCurrentUserId("user-raka");
       else if (role === "staf") setCurrentUserId("user-fira");
@@ -314,10 +458,21 @@ export function DataProvider({ children }) {
   };
 
   const switchUser = (userId) => {
+    if (!userId) {
+      setCurrentUserId(null);
+      setActiveRole(null);
+      try {
+        localStorage.removeItem("langkah_juara_sim_user");
+      } catch (e) {}
+      return;
+    }
     const u = users.find((item) => item.id === userId || item.aliasId === userId);
     if (u) {
       setCurrentUserId(u.id);
       setActiveRole(u.role);
+      try {
+        localStorage.setItem("langkah_juara_sim_user", u.id);
+      } catch (e) {}
     }
   };
 
@@ -353,32 +508,58 @@ export function DataProvider({ children }) {
       console.warn("Gagal logout:", err);
     }
     setAuthUser(null);
-    setCurrentUserId("user-raka");
-    setActiveRole("siswa");
+    setCurrentUserId(null);
+    setActiveRole(null);
+    try {
+      localStorage.removeItem("langkah_juara_sim_user");
+    } catch (e) {}
   };
 
-  const currentUser =
-    users.find((u) => u.id === currentUserId || u.aliasId === currentUserId) || users[0];
+  const currentUser = currentUserId
+    ? users.find((u) => u.id === currentUserId || u.aliasId === currentUserId) || null
+    : null;
 
-  // Helper Methods
-  const addPendaftaran = (programId, siswaId = currentUser.id) => {
+  // Helper Methods & Firestore Cloud Sync
+  const addPendaftaran = (programId, siswaId = currentUser?.id) => {
     // Check if already waiting or active
     const existing = pendaftaran.find(
-      (p) => p.programId === programId && p.siswaId === siswaId && (p.status === "menunggu" || p.status === "aktif")
+      (p) =>
+        p.programId === programId &&
+        (p.siswaId === siswaId || (currentUser?.aliasId && p.siswaId === currentUser.aliasId)) &&
+        (p.status === "menunggu" || p.status === "aktif")
     );
     if (existing) {
       return { success: false, message: "Pendaftaran untuk program ini sudah diajukan atau masih aktif." };
     }
 
+    const newId = `pend-${Date.now()}`;
+    const nowIso = new Date().toISOString();
     const newPendaftaran = {
-      id: `pend-${Date.now()}`,
+      id: newId,
       siswaId,
       programId,
       status: "menunggu",
       catatanStaf: "",
-      dibuatPada: new Date().toISOString(),
+      dibuatPada: nowIso,
     };
     setPendaftaran((prev) => [newPendaftaran, ...prev]);
+
+    // Firestore Sync: dibuatPada disimpan sebagai Timestamp sesuai PRD 7.1
+    try {
+      const firestoreData = {
+        siswaId,
+        programId,
+        status: "menunggu",
+        catatanStaf: "",
+        dibuatPada: Timestamp.now(),
+      };
+      setDoc(doc(db, "pendaftaran", newId), firestoreData).catch((err) => {
+        console.warn("Gagal menyimpan pendaftaran ke Firestore:", err);
+      });
+    } catch (e) {
+      console.warn("Gagal inisiasi simpan pendaftaran Firestore:", e);
+    }
+
     return { success: true, message: "Pendaftaran terkirim. Selesaikan pembayaran di kantor Langkah Juara." };
   };
 
@@ -386,49 +567,128 @@ export function DataProvider({ children }) {
     setPendaftaran((prev) =>
       prev.map((p) => (p.id === pendaftaranId ? { ...p, status, catatanStaf } : p))
     );
+
+    // Firestore Sync: update status dan catatan staf
+    try {
+      setDoc(
+        doc(db, "pendaftaran", pendaftaranId),
+        { status, catatanStaf },
+        { merge: true }
+      ).catch((err) => {
+        console.warn("Gagal memperbarui status pendaftaran di Firestore:", err);
+      });
+    } catch (e) {
+      console.warn("Gagal inisiasi update status pendaftaran Firestore:", e);
+    }
   };
 
   const addKelas = (kelasData) => {
+    const newId = `kelas-${Date.now()}`;
     const newK = {
-      id: `kelas-${Date.now()}`,
+      id: newId,
       siswaIds: [],
       ...kelasData,
     };
     setKelas((prev) => [newK, ...prev]);
+
+    // Firestore Sync: simpan kelas ke koleksi "kelas"
+    try {
+      const { id, ...firestoreData } = newK;
+      setDoc(doc(db, "kelas", newId), {
+        ...firestoreData,
+        siswaIds: Array.isArray(newK.siswaIds) ? newK.siswaIds : [],
+      }).catch((err) => {
+        console.warn("Gagal menyimpan kelas ke Firestore:", err);
+      });
+    } catch (e) {
+      console.warn("Gagal inisiasi simpan kelas Firestore:", e);
+    }
+
     return newK;
   };
 
   const addSiswaToKelas = (kelasId, siswaId) => {
+    let updatedSiswaIds = null;
     setKelas((prev) =>
       prev.map((k) => {
         if (k.id === kelasId) {
           if (!k.siswaIds.includes(siswaId)) {
-            return { ...k, siswaIds: [...k.siswaIds, siswaId] };
+            const nextList = [...k.siswaIds, siswaId];
+            updatedSiswaIds = nextList;
+            return { ...k, siswaIds: nextList };
           }
         }
         return k;
       })
     );
+
+    // Firestore Sync: update array siswaIds di kelas
+    if (updatedSiswaIds) {
+      try {
+        setDoc(
+          doc(db, "kelas", kelasId),
+          { siswaIds: updatedSiswaIds },
+          { merge: true }
+        ).catch((err) => {
+          console.warn("Gagal memperbarui siswa kelas di Firestore:", err);
+        });
+      } catch (e) {
+        console.warn("Gagal inisiasi update siswa kelas Firestore:", e);
+      }
+    }
   };
 
   const removeSiswaFromKelas = (kelasId, siswaId) => {
+    let updatedSiswaIds = null;
     setKelas((prev) =>
       prev.map((k) => {
         if (k.id === kelasId) {
-          return { ...k, siswaIds: k.siswaIds.filter((id) => id !== siswaId) };
+          const nextList = k.siswaIds.filter((id) => id !== siswaId);
+          updatedSiswaIds = nextList;
+          return { ...k, siswaIds: nextList };
         }
         return k;
       })
     );
+
+    // Firestore Sync: update array siswaIds di kelas setelah penghapusan
+    if (updatedSiswaIds) {
+      try {
+        setDoc(
+          doc(db, "kelas", kelasId),
+          { siswaIds: updatedSiswaIds },
+          { merge: true }
+        ).catch((err) => {
+          console.warn("Gagal memperbarui hapus siswa kelas di Firestore:", err);
+        });
+      } catch (e) {
+        console.warn("Gagal inisiasi hapus siswa kelas Firestore:", e);
+      }
+    }
   };
 
   const addPertemuan = (pertemuanData) => {
+    const newId = `pert-${Date.now()}`;
     const newPert = {
-      id: `pert-${Date.now()}`,
+      id: newId,
       hadirIds: [],
       ...pertemuanData,
     };
     setPertemuan((prev) => [newPert, ...prev]);
+
+    // Firestore Sync: simpan pertemuan baru ke koleksi "pertemuan"
+    try {
+      const { id, ...firestoreData } = newPert;
+      setDoc(doc(db, "pertemuan", newId), {
+        ...firestoreData,
+        hadirIds: Array.isArray(newPert.hadirIds) ? newPert.hadirIds : [],
+      }).catch((err) => {
+        console.warn("Gagal menyimpan pertemuan ke Firestore:", err);
+      });
+    } catch (e) {
+      console.warn("Gagal inisiasi simpan pertemuan Firestore:", e);
+    }
+
     return newPert;
   };
 
@@ -436,48 +696,140 @@ export function DataProvider({ children }) {
     setPertemuan((prev) =>
       prev.map((p) => (p.id === pertemuanId ? { ...p, hadirIds } : p))
     );
+
+    // Firestore Sync: update daftar hadirIds di pertemuan
+    try {
+      setDoc(
+        doc(db, "pertemuan", pertemuanId),
+        { hadirIds: Array.isArray(hadirIds) ? hadirIds : [] },
+        { merge: true }
+      ).catch((err) => {
+        console.warn("Gagal memperbarui presensi di Firestore:", err);
+      });
+    } catch (e) {
+      console.warn("Gagal inisiasi presensi Firestore:", e);
+    }
   };
 
   const addTugas = (tugasData) => {
+    const newId = `tugas-${Date.now()}`;
     const newTugas = {
-      id: `tugas-${Date.now()}`,
+      id: newId,
       ...tugasData,
     };
     setTugas((prev) => [newTugas, ...prev]);
+
+    // Firestore Sync: batasWaktu disimpan sebagai Timestamp sesuai PRD 7.1
+    try {
+      let deadlineTimestamp;
+      if (tugasData.batasWaktu) {
+        deadlineTimestamp = Timestamp.fromDate(new Date(tugasData.batasWaktu));
+      } else {
+        deadlineTimestamp = Timestamp.now();
+      }
+
+      const firestoreData = {
+        kelasId: tugasData.kelasId || "",
+        judul: tugasData.judul || "",
+        deskripsi: tugasData.deskripsi || "",
+        batasWaktu: deadlineTimestamp,
+      };
+
+      setDoc(doc(db, "tugas", newId), firestoreData).catch((err) => {
+        console.warn("Gagal menyimpan tugas ke Firestore:", err);
+      });
+    } catch (e) {
+      console.warn("Gagal inisiasi simpan tugas Firestore:", e);
+    }
+
     return newTugas;
   };
 
   const submitTugas = (tugasId, siswaId, tautan, kelasId) => {
     const existing = pengumpulan.find((p) => p.tugasId === tugasId && p.siswaId === siswaId);
+    const nowIso = new Date().toISOString();
+
     if (existing) {
       setPengumpulan((prev) =>
         prev.map((p) =>
           p.id === existing.id
-            ? { ...p, tautan, dikumpulkanPada: new Date().toISOString() }
+            ? { ...p, tautan, dikumpulkanPada: nowIso }
             : p
         )
       );
+
+      // Firestore Sync: perbarui submission tugas dengan dikumpulkanPada sebagai Timestamp
+      try {
+        setDoc(
+          doc(db, "pengumpulan", existing.id),
+          {
+            tautan,
+            dikumpulkanPada: Timestamp.now(),
+          },
+          { merge: true }
+        ).catch((err) => {
+          console.warn("Gagal memperbarui pengumpulan tugas ke Firestore:", err);
+        });
+      } catch (e) {
+        console.warn("Gagal inisiasi update pengumpulan Firestore:", e);
+      }
     } else {
+      const newId = `peng-${Date.now()}`;
       const newPeng = {
-        id: `peng-${Date.now()}`,
+        id: newId,
         tugasId,
         siswaId,
         kelasId: kelasId || "",
         tautan,
-        dikumpulkanPada: new Date().toISOString(),
+        dikumpulkanPada: nowIso,
         nilai: null,
         komentar: "",
       };
       setPengumpulan((prev) => [newPeng, ...prev]);
+
+      // Firestore Sync: simpan pengumpulan baru dengan dikumpulkanPada sebagai Timestamp sesuai PRD 7.1
+      try {
+        const firestoreData = {
+          tugasId,
+          siswaId,
+          kelasId: kelasId || "",
+          tautan,
+          dikumpulkanPada: Timestamp.now(),
+          nilai: null,
+          komentar: "",
+        };
+        setDoc(doc(db, "pengumpulan", newId), firestoreData).catch((err) => {
+          console.warn("Gagal menyimpan pengumpulan tugas ke Firestore:", err);
+        });
+      } catch (e) {
+        console.warn("Gagal inisiasi pengumpulan Firestore:", e);
+      }
     }
   };
 
   const gradeTugas = (pengumpulanId, nilai, komentar) => {
+    const numNilai = nilai !== null && nilai !== undefined && nilai !== "" ? Number(nilai) : null;
     setPengumpulan((prev) =>
       prev.map((p) =>
-        p.id === pengumpulanId ? { ...p, nilai: Number(nilai), komentar } : p
+        p.id === pengumpulanId ? { ...p, nilai: numNilai, komentar } : p
       )
     );
+
+    // Firestore Sync: simpan nilai dan komentar tugas ke pengumpulan
+    try {
+      setDoc(
+        doc(db, "pengumpulan", pengumpulanId),
+        {
+          nilai: numNilai,
+          komentar: komentar || "",
+        },
+        { merge: true }
+      ).catch((err) => {
+        console.warn("Gagal menyimpan penilaian tugas ke Firestore:", err);
+      });
+    } catch (e) {
+      console.warn("Gagal inisiasi penilaian tugas Firestore:", e);
+    }
   };
 
   const updateUserProfile = async (userId, updatedFields) => {
@@ -547,14 +899,26 @@ export function DataProvider({ children }) {
   };
 
   const addProgram = (programData) => {
+    const newId = `prog-${Date.now()}`;
     const newProg = {
-      id: `prog-${Date.now()}`,
+      id: newId,
       ...programData,
       harga: Number(programData.harga),
       jumlahPertemuan: Number(programData.jumlahPertemuan),
       aktif: programData.aktif !== false,
     };
     setPrograms((prev) => [newProg, ...prev]);
+
+    // Firestore Sync: simpan ke koleksi "program"
+    try {
+      const { id, ...firestoreData } = newProg;
+      setDoc(doc(db, "program", newId), firestoreData).catch((err) => {
+        console.warn("Gagal menyimpan program baru ke Firestore:", err);
+      });
+    } catch (e) {
+      console.warn("Gagal inisiasi simpan program Firestore:", e);
+    }
+
     return newProg;
   };
 
@@ -571,6 +935,28 @@ export function DataProvider({ children }) {
           : p
       )
     );
+
+    // Firestore Sync: perbarui field di dokumen "program"
+    try {
+      const cleanFields = { ...updatedFields };
+      if (cleanFields.harga !== undefined) cleanFields.harga = Number(cleanFields.harga);
+      if (cleanFields.jumlahPertemuan !== undefined) cleanFields.jumlahPertemuan = Number(cleanFields.jumlahPertemuan);
+      delete cleanFields.id;
+      setDoc(doc(db, "program", programId), cleanFields, { merge: true }).catch((err) => {
+        console.warn("Gagal memperbarui program di Firestore:", err);
+      });
+    } catch (e) {
+      console.warn("Gagal inisiasi update program Firestore:", e);
+    }
+  };
+
+  const deleteProgram = async (programId) => {
+    setPrograms((prev) => prev.filter((p) => p.id !== programId));
+    try {
+      await deleteDoc(doc(db, "program", programId));
+    } catch (e) {
+      console.warn("Gagal menghapus program dari Firestore:", e);
+    }
   };
 
   const resetAllData = () => {
@@ -620,6 +1006,7 @@ export function DataProvider({ children }) {
         deleteUser,
         addProgram,
         updateProgram,
+        deleteProgram,
         resetAllData,
       }}
     >
