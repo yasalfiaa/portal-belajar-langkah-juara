@@ -24,9 +24,6 @@ export default function SiswaKelasPage() {
     <PortalLayout title="Kelas Saya">
       <div className="space-y-6">
         <div>
-          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-orange-100 text-[#EA580C] text-[11px] font-bold uppercase tracking-wider mb-2">
-            Rute: /siswa/kelas
-          </div>
           <h2 className="text-xl font-bold text-[#1F2937]">Daftar Kelas yang Diikuti</h2>
           <p className="text-sm text-[#5A6B78] mt-1">
             Lihat jadwal belajar rutin, materi tatap muka, dan tugas-tugas di kelas bimbingan Anda.

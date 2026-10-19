@@ -87,7 +87,7 @@ function KelasYangDiajarTutorContent({ params }) {
         </div>
         <h3 className="text-lg font-bold text-red-900">Akses Ditolak</h3>
         <p className="text-xs text-red-700 mt-2 mb-6 leading-relaxed">
-          Anda tidak mengampu kelas ini. Sesuai <strong>Keputusan Bisnis 4.12</strong>, seorang tutor hanya dapat membuka dan mengelola kelas yang ia ajar sendiri (kelas ini diampu oleh {classTutorObj?.nama || "tutor lain"}).
+          Akses ditolak karena Anda tidak mengajar kelas ini.
         </p>
         <Link
           href="/tutor/dasbor"

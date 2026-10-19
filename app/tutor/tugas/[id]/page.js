@@ -70,7 +70,7 @@ function TugasDanNilaiTutorContent({ params }) {
     setErrorGrade("");
 
     if (!canGrade) {
-      setErrorGrade("Akses ditolak: Staf tidak dapat mengubah atau mengisi nilai tugas (Keputusan Bisnis 4.13).");
+      setErrorGrade("Akses ditolak: Staf tidak dapat mengubah atau mengisi nilai tugas.");
       return;
     }
 
@@ -97,12 +97,12 @@ function TugasDanNilaiTutorContent({ params }) {
         <span>Kembali ke Kelas {currentClass?.nama}</span>
       </Link>
 
-      {/* Decision 1 info banner if staff */}
+      {/* Info banner if not canGrade */}
       {!canGrade && (
         <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-800 flex items-center gap-2">
           <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
           <span>
-            <strong>Keputusan Bisnis 4.13:</strong> Anda masuk sebagai {currentUser.role}. Hanya tutor pengajar kelas ini ({users.find((u) => u.id === currentClass?.tutorId)?.nama}) dan Super Admin yang dapat mengisi atau mengubah nilai tugas.
+            Hanya tutor pengajar kelas ini ({users.find((u) => u.id === currentClass?.tutorId)?.nama}) dan Super Admin yang dapat mengisi atau mengubah nilai tugas.
           </span>
         </div>
       )}

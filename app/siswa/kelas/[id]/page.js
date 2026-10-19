@@ -91,7 +91,7 @@ function SiswaKelasDetailContent({ params }) {
         className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#5A6B78] hover:text-[#EA580C] transition-colors"
       >
         <ChevronLeft className="w-4 h-4" />
-        <span>Kembali ke Daftar Kelas (/siswa/kelas)</span>
+        <span>Kembali ke Daftar Kelas</span>
       </Link>
 
       {/* Header Info Panel */}

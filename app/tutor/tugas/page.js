@@ -21,9 +21,6 @@ export default function TugasDanNilaiTutorOverviewPage() {
     <PortalLayout title="Tugas dan Nilai">
       <div className="space-y-6">
         <div>
-          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800 text-[11px] font-bold uppercase tracking-wider mb-2">
-            Rute: /tutor/tugas
-          </div>
           <h2 className="text-xl font-bold text-[#1F2937]">Daftar Tugas dan Penilaian</h2>
           <p className="text-sm text-[#5A6B78] mt-0.5">
             Pilih tugas dari kelas bimbingan yang Anda ampu untuk memeriksa pengumpulan dan memberikan nilai.

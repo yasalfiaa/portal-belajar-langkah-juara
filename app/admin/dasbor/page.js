@@ -79,9 +79,6 @@ export default function DasborAdminRoutePage() {
     <PortalLayout title="Dasbor Pemilik (Super Admin)">
       <div className="space-y-6">
         <div>
-          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-purple-100 text-purple-700 text-[11px] font-bold uppercase tracking-wider mb-2">
-            Rute: /admin/dasbor
-          </div>
           <h2 className="text-xl font-bold text-[#1F2937]">Dasbor Eksekutif Pemilik</h2>
           <p className="text-sm text-[#5A6B78] mt-0.5">
             Ikhtisar performa bimbingan belajar, metrik siswa aktif, dan rekap kehadiran lembaga.

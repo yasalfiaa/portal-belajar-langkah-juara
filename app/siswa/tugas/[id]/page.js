@@ -57,7 +57,7 @@ function SiswaTugasDetailContent({ params }) {
         <h3 className="text-lg font-bold text-[#1F2937]">Tugas tidak ditemukan</h3>
         <p className="text-xs text-[#5A6B78] mt-2 mb-6 leading-relaxed">
           {currentTugas && !isEnrolledInClass
-            ? `Anda tidak terdaftar di kelas tugas ini (${currentClass?.nama}). Sesuai Keputusan Bisnis 4.5, nilai dan tugas kelas lain tidak dapat diakses oleh siswa dari program berbeda.`
+            ? `Anda tidak terdaftar di kelas tugas ini (${currentClass?.nama}). Nilai dan tugas kelas lain tidak dapat diakses oleh siswa dari program berbeda.`
             : "ID tugas yang Anda tuju tidak terdaftar di sistem Langkah Juara."}
         </p>
         <div className="flex flex-col gap-2">
@@ -66,13 +66,8 @@ function SiswaTugasDetailContent({ params }) {
             className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-[#EA580C] text-white text-xs font-semibold"
           >
             <ChevronLeft className="w-4 h-4" />
-            Kembali ke Beranda Siswa
+            Kembali ke Beranda
           </Link>
-          {currentTugas && !isEnrolledInClass && (
-            <p className="text-[11px] text-gray-400 italic">
-              Petunjuk uji: Ganti akun di header ke Salsa untuk melihat tugas ini, atau Pak Arif (Super Admin).
-            </p>
-          )}
         </div>
       </div>
     );

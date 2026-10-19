@@ -39,9 +39,6 @@ export default function SiswaProgramPage() {
     <PortalLayout title="Program Belajar Siswa">
       <div className="space-y-8">
         <div>
-          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-orange-100 text-[#EA580C] text-[11px] font-bold uppercase tracking-wider mb-2">
-            Rute: /siswa/program
-          </div>
           <h2 className="text-xl font-bold text-[#1F2937]">Pilihan Program Belajar</h2>
           <p className="text-sm text-[#5A6B78] mt-1">
             Pilih program bimbingan belajar berkualitas untuk jenjang SMP dan SMA sesuai kebutuhan Anda.

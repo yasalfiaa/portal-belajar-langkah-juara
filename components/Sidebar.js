@@ -25,7 +25,7 @@ import {
 export default function Sidebar({ isOpen, onClose }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { activeRole, switchRole, switchUser, currentUser, users, logoutUser } = useData();
+  const { currentUser, logoutUser } = useData();
 
   const isActive = (path) => {
     if (path === "/" && pathname === "/") return true;
@@ -74,35 +74,13 @@ export default function Sidebar({ isOpen, onClose }) {
           </Link>
         </div>
 
-        {/* Quick User / Role Selector */}
-        <div className="p-3 bg-[#F7F5F2] border-b border-gray-200/80">
-          <div className="text-[11px] font-semibold text-[#5A6B78] uppercase tracking-wider mb-1.5 px-1 flex items-center justify-between">
-            <span>Simulasi Pengguna:</span>
-            <span className="text-[#EA580C] font-bold uppercase">{currentUser?.role || "Belum Masuk"}</span>
-          </div>
-          <select
-            value={currentUser?.id || ""}
-            onChange={(e) => switchUser(e.target.value)}
-            className="w-full px-2 py-1.5 rounded-lg bg-white border border-gray-200 text-xs font-semibold text-[#1F2937] outline-hidden focus:border-[#EA580C]"
-          >
-            <option value="">-- Mode Tamu (Belum Masuk) --</option>
-            <option value="user-raka">Raka Pratama (Siswa UTBK)</option>
-            <option value="user-salsa">Salsabila Putri (Siswa SMP)</option>
-            <option value="user-fira">Kak Fira (Staf)</option>
-            <option value="user-dimas">Kak Dimas (Tutor UTBK)</option>
-            <option value="user-nadia">Kak Nadia (Tutor SMP)</option>
-            <option value="user-arif">Pak Arif (Super Admin)</option>
-          </select>
-        </div>
-
         {/* Navigation Links according to Rancangan Portal Bimbel.md */}
         <nav className="flex-1 overflow-y-auto px-4 py-4 space-y-6">
           {/* Siswa Section: Tampil untuk Siswa atau Super Admin */}
           {(currentUser?.role === "siswa" || currentUser?.role === "super_admin") && (
             <div>
-              <div className="text-[11px] font-bold text-[#5A6B78] uppercase tracking-wider px-3 mb-2 flex items-center justify-between">
+              <div className="text-[11px] font-bold text-[#5A6B78] uppercase tracking-wider px-3 mb-2">
                 <span>Siswa</span>
-                <span className="text-[10px] text-gray-400 font-normal">/siswa/*</span>
               </div>
               <div className="space-y-1">
                 <Link href="/siswa/beranda" className={navItemClass("/siswa/beranda")}>
@@ -128,9 +106,8 @@ export default function Sidebar({ isOpen, onClose }) {
           {/* Staf Section: Tampil untuk Staf atau Super Admin */}
           {(currentUser?.role === "staf" || currentUser?.role === "super_admin") && (
             <div>
-              <div className="text-[11px] font-bold text-[#5A6B78] uppercase tracking-wider px-3 mb-2 flex items-center justify-between">
+              <div className="text-[11px] font-bold text-[#5A6B78] uppercase tracking-wider px-3 mb-2">
                 <span>Staf</span>
-                <span className="text-[10px] text-gray-400 font-normal">/staf/*</span>
               </div>
               <div className="space-y-1">
                 <Link href="/staf/dasbor" className={navItemClass("/staf/dasbor")}>
@@ -162,9 +139,8 @@ export default function Sidebar({ isOpen, onClose }) {
           {/* Tutor Section: Tampil untuk Tutor atau Super Admin */}
           {(currentUser?.role === "tutor" || currentUser?.role === "super_admin") && (
             <div>
-              <div className="text-[11px] font-bold text-[#5A6B78] uppercase tracking-wider px-3 mb-2 flex items-center justify-between">
+              <div className="text-[11px] font-bold text-[#5A6B78] uppercase tracking-wider px-3 mb-2">
                 <span>Tutor</span>
-                <span className="text-[10px] text-gray-400 font-normal">/tutor/*</span>
               </div>
               <div className="space-y-1">
                 <Link href="/tutor/dasbor" className={navItemClass("/tutor/dasbor")}>
@@ -192,9 +168,8 @@ export default function Sidebar({ isOpen, onClose }) {
           {/* Super Admin Section: HANYA TAMPIL bila akun yang masuk adalah Super Admin */}
           {currentUser?.role === "super_admin" && (
             <div>
-              <div className="text-[11px] font-bold text-[#5A6B78] uppercase tracking-wider px-3 mb-2 flex items-center justify-between">
+              <div className="text-[11px] font-bold text-[#5A6B78] uppercase tracking-wider px-3 mb-2">
                 <span>Super Admin</span>
-                <span className="text-[10px] text-gray-400 font-normal">/admin/*</span>
               </div>
               <div className="space-y-1">
                 <Link href="/admin/dasbor" className={navItemClass("/admin/dasbor")}>
@@ -229,11 +204,11 @@ export default function Sidebar({ isOpen, onClose }) {
             <div className="space-y-1">
               <Link href="/masuk" className={navItemClass("/masuk")}>
                 <LogIn className="w-4 h-4 shrink-0" />
-                <span>Masuk (/masuk)</span>
+                <span>Masuk</span>
               </Link>
               <Link href="/daftar" className={navItemClass("/daftar")}>
                 <FileText className="w-4 h-4 shrink-0" />
-                <span>Daftar (/daftar)</span>
+                <span>Daftar</span>
               </Link>
             </div>
           </div>

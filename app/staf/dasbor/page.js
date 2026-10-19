@@ -24,9 +24,6 @@ export default function DasborStafRoutePage() {
     <PortalLayout title="Dasbor Staf Administrasi">
       <div className="space-y-6">
         <div>
-          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-700 text-[11px] font-bold uppercase tracking-wider mb-2">
-            Rute: /staf/dasbor
-          </div>
           <h2 className="text-xl font-bold text-[#1F2937]">Dasbor Staf</h2>
           <p className="text-sm text-[#5A6B78] mt-0.5">
             Ringkasan harian operasional pendaftaran dan jadwal bimbingan belajar Langkah Juara.

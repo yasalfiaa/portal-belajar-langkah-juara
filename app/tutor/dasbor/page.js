@@ -27,9 +27,6 @@ export default function DasborTutorRoutePage() {
     <PortalLayout title="Dasbor Tutor">
       <div className="space-y-6">
         <div>
-          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800 text-[11px] font-bold uppercase tracking-wider mb-2">
-            Rute: /tutor/dasbor
-          </div>
           <h2 className="text-xl font-bold text-[#1F2937]">Dasbor Pengajar</h2>
           <p className="text-sm text-[#5A6B78] mt-0.5">
             Kelola sesi bimbingan tatap muka, catat presensi siswa, serta berikan nilai dan umpan balik tugas.

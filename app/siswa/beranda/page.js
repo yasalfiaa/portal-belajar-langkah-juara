@@ -12,7 +12,6 @@ import {
   ChevronRight,
   BookOpen,
   CheckCircle2,
-  Sparkles,
 } from "lucide-react";
 
 export default function SiswaBerandaPage() {
@@ -49,15 +48,11 @@ export default function SiswaBerandaPage() {
     .sort((a, b) => new Date(a.batasWaktu) - new Date(b.batasWaktu));
 
   return (
-    <PortalLayout title="Beranda Siswa">
+    <PortalLayout>
       <div className="space-y-6">
         {/* Welcome Banner */}
         <div className="bg-gradient-to-r from-orange-600 to-amber-600 rounded-3xl p-6 sm:p-8 text-white shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
           <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 backdrop-blur-xs text-xs font-semibold mb-3">
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>Portal Siswa • /siswa/beranda</span>
-            </div>
             <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
               Halo, {currentUser?.nama || "Siswa"}! 👋
             </h2>
